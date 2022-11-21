@@ -1,0 +1,7 @@
+POST https://proud-water-8072.fly.dev/api/persons
+Content-Type: application/json 
+
+{
+    "name": "Jenni Ylisirniö",
+    "number": "349857394875"
+}
