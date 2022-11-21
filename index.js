@@ -7,6 +7,7 @@ const app = express()
 
 app.use(cors())
 app.use(express.json())
+app.use(express.static('build'))
 app.use(morgan('tiny')) // tiny format with custom token :body
 
 let persons = [
@@ -33,7 +34,7 @@ let persons = [
 ]
 
 app.get('/', (request, response) => {
-  response.send('<h1>Hello World!</h1>')
+  response.send('<p>helllooooo</p>')
 })
   
 app.get('/api/persons', (request, response) => {
@@ -104,7 +105,6 @@ app.post('/api/persons', (request, response) => {
 
   // console.log(person) -> unnecessary when using morgan
   response.json(person)
-  morgan.token('body', (req) => JSON.stringify(req.body)) // for some reason this token works sometimes and sometimes not
 })
 
 const PORT = process.env.PORT || 3001
