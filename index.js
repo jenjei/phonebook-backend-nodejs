@@ -1,7 +1,7 @@
-const Person = require('./models/person')
 require('dotenv').config()
+const Person = require('./models/person')
+
 const express = require('express')
-const mongoose = require('mongoose')
 const morgan = require('morgan') // https://github.com/expressjs/morgan documentation here
 const cors = require('cors')
 const app = express()
@@ -51,13 +51,23 @@ const generateId = (min, max) => {
 app.post('/api/persons', (request, response) => {
   const body = request.body
 
-  if (!body.name) { // jos nimi puuttuu, niin anna error viesti
+  const person = new Person ({
+    name: body.name,
+    number: body.number,
+    id: generateId(5, 100000000)
+  })
+
+  if(body.name === undefined) {
+    return response.status(400).json({error: 'Name missing'})
+  }
+
+  /*if (!body.name) { // jos nimi puuttuu, niin anna error viesti
     return response.status(400).json({ error: 'name missing' })
   }
 
   if (!body.number) { // jos numero puuttuu, niin anna error viesti
     return response.status(400).json({ error: 'number missing' })
-  }
+  }*/
 
   /*const found = Person.find(person => person.name===body.name)
   if(found) {
@@ -65,21 +75,11 @@ app.post('/api/persons', (request, response) => {
       error: 'name must be unique'
     })
   }*/
-  
-  const person = new Person ({
-    name: body.name,
-    number: body.number,
-    id: generateId(5, 100000000)
-  })
 
-  person.save().then(result => {
+  person.save().then((result) => {
     console.log('added ', result.name, result.number, ' to the phonebook')
     response.json(result)
-    mongoose.connection.close()
   })
-
-  // console.log(person) -> unnecessary when using morgan
-  response.json(person)
 })
 
 const PORT = process.env.PORT || 3001
