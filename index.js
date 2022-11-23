@@ -22,12 +22,15 @@ app.get('/api/persons', (request, response) => {
 })
 
 app.get('/info', (request, response) => {
-  response.send('<p>Phonebook has info for ' + Person.length + ' people.</p>'
+  Person.count({}, function(error, num) {
+    console.log('I have ' + num + ' persons in my phonebook')
+    response.send('<p>Phonebook has info for ' + num + ' people.</p>'
   + '<p></p>' + Date())
+  })
 })
 
 // creating endpoint for one contact
-app.get('/api/persons/:id', (request, response) => {
+app.get('/api/persons/:id', (request, response, next) => {
   Person.findById(request.params.id)
     .then(person => {
       if (person) {
@@ -36,10 +39,7 @@ app.get('/api/persons/:id', (request, response) => {
         response.status(404).end()
       }
     })
-    .catch(error => {
-      console.log(error)
-      response.status(400).send({error: 'malformatted id'})
-    })
+    .catch(error => next(error))
 })
 
 // deleting one contact
@@ -67,15 +67,11 @@ app.post('/api/persons', (request, response) => {
     id: generateId(5, 100000000)
   })
 
-  if(body.name === undefined) {
-    return response.status(400).json({error: 'Name missing'})
+  /*if(person.name === undefined) {
+    return response.status(400).send({error: 'Name missing'})
   }
 
-  /*if (!body.name) { // jos nimi puuttuu, niin anna error viesti
-    return response.status(400).json({ error: 'name missing' })
-  }
-
-  if (!body.number) { // jos numero puuttuu, niin anna error viesti
+  if (person.number === undefined) { // jos numero puuttuu, niin anna error viesti
     return response.status(400).json({ error: 'number missing' })
   }*/
 
@@ -87,10 +83,19 @@ app.post('/api/persons', (request, response) => {
   }*/
 
   person.save().then((result) => {
+    if (person.name === '' || person.number === '') {
+      console.log('content missing')
+      response.status(404).end()
+    } else {
     console.log('added ', result.name, result.number, ' to the phonebook')
     response.json(result)
-  })
+  }})
 })
+
+const unknownEndpoint = (request, response) => {
+  response.status(404).send({ error: 'unknown endpoint' })
+}
+app.use(unknownEndpoint)
 
 const errorHandler = (error, request, response, next) => {
   console.error(error.message)
@@ -98,9 +103,11 @@ const errorHandler = (error, request, response, next) => {
   if (error.name === 'CastError') {
     return response.status(400).send({ error: 'malformatted id' })
   }
+  if (error.name === 'AxiosError') {
+    return response.status(400).send({error: 'axios error' })
+  }
   next(error)
 }
-
 app.use(errorHandler)
 
 const PORT = process.env.PORT || 3001
