@@ -9,27 +9,30 @@ const app = express()
 app.use(cors())
 app.use(express.static('build'))
 app.use(express.json())
-app.use(morgan('tiny')) // tiny format with custom token :body
+app.use(morgan('tiny')) // tiny formatted morgans, PROBLEM custom tokens not working and dont know why
 
+// GET placeholder page, for now this endpoint leads to frontend
 app.get('/', (request, response) => {
   response.send('<p>helllooooo</p>')
 })
   
+// GET all people
 app.get('/api/persons', (request, response) => {
   Person.find({}).then(people => {
     response.json(people)
   })
 })
 
+// GET info
 app.get('/info', (request, response) => {
-  Person.count({}, function(error, num) {
+  Person.count({}, function(error, num ) {
     console.log('I have ' + num + ' persons in my phonebook')
     response.send('<p>Phonebook has info for ' + num + ' people.</p>'
   + '<p></p>' + Date())
   })
 })
 
-// creating endpoint for one contact
+// creating endpoint for one contact, GET one person
 app.get('/api/persons/:id', (request, response, next) => {
   Person.findById(request.params.id)
     .then(person => {
@@ -42,69 +45,62 @@ app.get('/api/persons/:id', (request, response, next) => {
     .catch(error => next(error))
 })
 
-// deleting one contact
+// deleting one contact, DELETE
 app.delete('/api/persons/:id', (request, response, next) => {
   Person.findByIdAndRemove(request.params.id)
     .then(result => {
       response.status(204).end()
     })
-    .catch(error => next(error))
+    .catch(error => next(error)) // PROBLEM: this function deletes the right contact but notification is not shown :(
 })
 
-const generateId = (min, max) => {
-  min = Math.ceil(min)
-  max = Math.floor(max)
-  return Math.floor(Math.random() * (max - min) + min)
-}
 
-// creating new person
-app.post('/api/persons', (request, response) => {
+// creating new person, POST
+app.post('/api/persons', (request, response, next) => {
   const body = request.body
 
   const person = new Person ({
     name: body.name,
-    number: body.number,
-    id: generateId(5, 100000000)
+    number: body.number
   })
 
-  /*if(person.name === undefined) {
-    return response.status(400).send({error: 'Name missing'})
-  }
-
-  if (person.number === undefined) { // jos numero puuttuu, niin anna error viesti
-    return response.status(400).json({ error: 'number missing' })
-  }*/
-
-  /*const found = Person.find(person => person.name===body.name)
-  if(found) {
-    return response.status(400).json({
-      error: 'name must be unique'
-    })
-  }*/
-
-  person.save().then((result) => {
-    if (person.name === '' || person.number === '') {
-      console.log('content missing')
-      response.status(404).end()
+  Person.find({}).then(result => {
+    if (person.name.toLowerCase() === result.name) {
+      console.log('name must be unique')
+      return response.status(400).end()
+    } // PROBLEM: when user chooses to update number to a new one, notification says that person has already deleted from the server XD
+    else if (person.number === '') {
+      console.log('number missing')
+      return response.status(400).end()
+    } // PROBLEM: page never notificates user that number is missing, instead consolelog does... good thing is that contact is not saved to db if this error occurs
+    else if (person.name === '') {
+      console.log('name missing')
+      return response.status(400).end() // same PROBLEM as with number missing
     } else {
-    console.log('added ', result.name, result.number, ' to the phonebook')
-    response.json(result)
-  }})
+      person.save().then((result) => {
+        console.log('added ', result.name, result.number, ' to the phonebook')
+        response.json(result)
+      })
+    }}
+  ).catch(error => next(error))
 })
 
+// error handlers here:
 const unknownEndpoint = (request, response) => {
   response.status(404).send({ error: 'unknown endpoint' })
 }
 app.use(unknownEndpoint)
+
+const nameMissing = (request, response) => {
+  response.status(400).send({error: 'name missing'})
+}
+app.use(nameMissing)
 
 const errorHandler = (error, request, response, next) => {
   console.error(error.message)
 
   if (error.name === 'CastError') {
     return response.status(400).send({ error: 'malformatted id' })
-  }
-  if (error.name === 'AxiosError') {
-    return response.status(400).send({error: 'axios error' })
   }
   next(error)
 }
