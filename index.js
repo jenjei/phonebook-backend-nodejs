@@ -42,7 +42,10 @@ app.get('/api/persons/:id', (request, response, next) => {
         response.status(404).end()
       }
     })
-    .catch(error => next(error))
+    .catch(error => {
+      console.log(error)
+      next(error)
+    })
 })
 
 // deleting one contact, DELETE
@@ -54,6 +57,22 @@ app.delete('/api/persons/:id', (request, response, next) => {
     .catch(error => next(error)) // PROBLEM: this function deletes the right contact but notification is not shown :(
 })
 
+// PUT, updating one contact
+app.put('/api/persons/:id', (request, response, next) => {
+  const body = request.body
+
+  const person = ({ // huom EI NEW PERSON
+    id: body.id,
+    name: body.name,
+    number: body.number
+  })
+
+  Person.findByIdAndUpdate(request.params.id, person, { new: true })
+    .then(updatedPerson => {
+      response.json(updatedPerson)
+    })
+    .catch(error => next(error))
+})
 
 // creating new person, POST
 app.post('/api/persons', (request, response, next) => {
@@ -65,24 +84,25 @@ app.post('/api/persons', (request, response, next) => {
   })
 
   Person.find({}).then(result => {
-    if (person.name.toLowerCase() === result.name) {
+    if (person.name === result.name) { // PROBLEM: case sensitive when should be not case sensitive
       console.log('name must be unique')
-      return response.status(400).end()
-    } // PROBLEM: when user chooses to update number to a new one, notification says that person has already deleted from the server XD
+      response.status(400).end()
+    }
     else if (person.number === '') {
       console.log('number missing')
-      return response.status(400).end()
+      response.status(400).end()
     } // PROBLEM: page never notificates user that number is missing, instead consolelog does... good thing is that contact is not saved to db if this error occurs
     else if (person.name === '') {
       console.log('name missing')
-      return response.status(400).end() // same PROBLEM as with number missing
-    } else {
+      response.status(400).end() // same PROBLEM as with number missing
+    } 
+    else {
       person.save().then((result) => {
         console.log('added ', result.name, result.number, ' to the phonebook')
         response.json(result)
-      })
-    }}
-  ).catch(error => next(error))
+      }).catch(error => next(error))
+    }
+  })
 })
 
 // error handlers here:
@@ -90,11 +110,6 @@ const unknownEndpoint = (request, response) => {
   response.status(404).send({ error: 'unknown endpoint' })
 }
 app.use(unknownEndpoint)
-
-const nameMissing = (request, response) => {
-  response.status(400).send({error: 'name missing'})
-}
-app.use(nameMissing)
 
 const errorHandler = (error, request, response, next) => {
   console.error(error.message)
