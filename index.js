@@ -59,15 +59,9 @@ app.delete('/api/persons/:id', (request, response, next) => {
 
 // PUT, updating one contact
 app.put('/api/persons/:id', (request, response, next) => {
-  const body = request.body
+  const {name, number} = request.body
 
-  const person = ({ // huom EI NEW PERSON
-    id: body.id,
-    name: body.name,
-    number: body.number
-  })
-
-  Person.findByIdAndUpdate(request.params.id, person, { new: true })
+  Person.findByIdAndUpdate(request.params.id, {name, number}, { new:true, runValidators:true, context:'query' })
     .then(updatedPerson => {
       response.json(updatedPerson)
     })
@@ -88,14 +82,6 @@ app.post('/api/persons', (request, response, next) => {
       console.log('name must be unique')
       response.status(400).end()
     }
-    else if (person.number === '') {
-      console.log('number missing')
-      response.status(400).end()
-    } // PROBLEM: page never notificates user that number is missing, instead consolelog does... good thing is that contact is not saved to db if this error occurs
-    else if (person.name === '') {
-      console.log('name missing')
-      response.status(400).end() // same PROBLEM as with number missing
-    } 
     else {
       person.save().then((result) => {
         console.log('added ', result.name, result.number, ' to the phonebook')
@@ -112,10 +98,13 @@ const unknownEndpoint = (request, response) => {
 app.use(unknownEndpoint)
 
 const errorHandler = (error, request, response, next) => {
-  console.error(error.message)
+  console.log('first:', error.message)
+  console.log('name:', error.name)
 
   if (error.name === 'CastError') {
     return response.status(400).send({ error: 'malformatted id' })
+  } else if (error.name === 'ValidationError') {
+    return response.status(400).json({ error: error.message })
   }
   next(error)
 }
