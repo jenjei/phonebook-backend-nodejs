@@ -15,7 +15,7 @@ app.use(morgan('tiny')) // tiny formatted morgans, PROBLEM custom tokens not wor
 app.get('/', (request, response) => {
   response.send('<p>helllooooo</p>')
 })
-  
+
 // GET all people
 app.get('/api/persons', (request, response) => {
   Person.find({}).then(people => {
@@ -52,6 +52,7 @@ app.get('/api/persons/:id', (request, response, next) => {
 app.delete('/api/persons/:id', (request, response, next) => {
   Person.findByIdAndRemove(request.params.id)
     .then(result => {
+      console.log('deleted', result)
       response.status(204).end()
     })
     .catch(error => next(error))
@@ -59,9 +60,9 @@ app.delete('/api/persons/:id', (request, response, next) => {
 
 // PUT, updating one contact
 app.put('/api/persons/:id', (request, response, next) => {
-  const {name, number} = request.body
+  const { name, number } = request.body
 
-  Person.findByIdAndUpdate(request.params.id, {name, number}, { new:true, runValidators:true, context:'query' })
+  Person.findByIdAndUpdate(request.params.id, { name, number }, { new:true, runValidators:true, context:'query' })
     .then(updatedPerson => {
       response.json(updatedPerson)
     })

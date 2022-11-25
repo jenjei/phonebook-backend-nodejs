@@ -9,7 +9,8 @@
     "build:ui": "rm -rf build && cd ../fullstackopen2022/osa2/puhelinluettelo  && npm run build && cp -r build ../../../personbackend",
     "deploy": "fly deploy",
     "deploy:full": "npm run build:ui && npm run deploy",
-    "logs:prod": "fly logs"
+    "logs:prod": "fly logs",
+    "lint": "eslint ."
   },
   "author": "Jenni Ylisirniö",
   "license": "MIT",
@@ -19,5 +20,8 @@
     "express": "^4.18.2",
     "mongoose": "^6.7.2",
     "morgan": "^1.10.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.28.0"
   }
 }
