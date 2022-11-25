@@ -54,7 +54,7 @@ app.delete('/api/persons/:id', (request, response, next) => {
     .then(result => {
       response.status(204).end()
     })
-    .catch(error => next(error)) // PROBLEM: this function deletes the right contact but notification is not shown :(
+    .catch(error => next(error))
 })
 
 // PUT, updating one contact
